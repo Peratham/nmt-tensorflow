@@ -58,7 +58,7 @@ def sequential_compute(data):
 
 if __name__ == '__main__':
     
-    data = np.random.randn(256, 512).astype(float32)
+    data = np.random.randn(256, 512).astype(np.float32)
     
     print('- ' * 50)
     
