@@ -58,20 +58,21 @@ def sequential_compute(data):
 
 if __name__ == '__main__':
     
-    data = np.random.randn(256, 512).astype(np.float32)
+    data = [np.random.randn(256, 512).astype(np.float32)
+            for _ in range(3)]
     
     print('- ' * 50)
     
     t = time()
-    res = single_compute(data)
+    res = single_compute(data[0])
     print("Single Computation took %.6fs" %(time()-t))
     
     t = time()
-    res = sequential_compute(data)
+    res = sequential_compute(data[1])
     print("Sequential Computation took %.6fs" %(time()-t))
     
     t = time()
-    res = twin_compute(data)
+    res = twin_compute(data[2])
     print("Twin Computation took %.6fs" %(time()-t))
     
     print('- ' * 50)
