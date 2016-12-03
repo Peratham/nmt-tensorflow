@@ -149,7 +149,8 @@ class Model(object):
                                                            loss_f=loss_f)
 
         # Gradients and SGD update operation for training the model.
-        params = tf.trainable_variables()
+        params = tf.trainable_variables() if scope is None else tf.get_collection(
+            tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope)
         if not forward_only:
             self.gradient_norms = []
             self.updates = []
@@ -163,7 +164,7 @@ class Model(object):
 
         # Saving Model Parameters Operation.
         trainable_vars = tf.all_variables() if scope is None else tf.get_collection(
-            tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope)
+            tf.GraphKeys.GLOBAL_VARIABLES, scope=scope)
         self.saver = tf.train.Saver(trainable_vars)
 
     def _get_loss(self, num_samples, target_vocab_size, proj_w_t, proj_w, proj_b):
