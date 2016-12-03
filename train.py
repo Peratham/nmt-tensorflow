@@ -137,7 +137,7 @@ def twin_computation():
             f.write(linebreak())
             f.write('Average training time: %.3f s/iter' %((time() - t)/_NUM_ITER))
 
-def main():
+def main(_):
     single_computation()
     twin_computation()
     
