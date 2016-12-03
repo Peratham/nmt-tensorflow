@@ -47,6 +47,18 @@ def average_gradients(tower_grads, buckets):
         bucket_grads.append(average_grads)
     return bucket_grads
 
+def gradients(tower_losses, buckets, opt, global_step, max_gradient_norm=5.0):
+    params = tf.trainable_variables()
+    g0_losses, g1_losses = tower_losses
+    updates = []
+    for b in xrange(len(buckets)):
+        grad_0 = tf.gradients(g0_losses[b], params)
+        grad_1 = tf.gradients(g1_losses[b], params)
+        grads = [tf.reduce_mean(tf.concat(0, [tf.expand_dims(g0, 0), tf.expand_dims(g1, 0)]), 0)
+                 for g0, g1 in zip(grad_0, grad_1)]
+        clipped_grads, _ = tf.clip_by_global_norm(grads, max_gradient_norm)
+        updates.append(opt.apply_gradients(zip(clipped_grads, params), global_step=global_step))
+    return updates
 
 def _get_learning_rate(optimizer='adam'):
     return {
@@ -104,8 +116,9 @@ def train(source_vocab_size,
 
         opt = _get_optimizer(lr, optimizer=optim)
 
-        tower_grads = []
+        #tower_grads = []
         tower_inputs = []
+        tower_losses = []
 
         t = time()
         for i in xrange(_FLAGS.num_gpus):
@@ -130,14 +143,17 @@ def train(source_vocab_size,
                                        use_lstm=use_lstm,
                                        use_lstm_peepholes=use_lstm_peepholes,
                                        use_local=use_local)
-
-                tower_grads.append([opt.compute_gradients(loss) for loss in tower_loss])
+                
+                tower_losses.append(tower_loss)
+                #tower_grads.append([opt.compute_gradients(loss) for loss in tower_loss])
 
         f.write('Initializing Graph took %.3fs\n' % (time() - t))
         f.write(linebreak())
+        
+        updates = gradients(tower_losses, buckets, opt, global_step, max_gradient_norm)
 
-        grads = average_gradients(tower_grads, buckets)
-        updates = [opt.apply_gradients(grad, global_step=global_step) for grad in grads]
+        #grads = average_gradients(tower_grads, buckets)
+        #updates = [opt.apply_gradients(grad, global_step=global_step) for grad in grads]
 
         with tf.Session(graph=graph, config=_CONFIG) as sess:
             sess.run(tf.global_variables_initializer())
@@ -168,8 +184,8 @@ def train(source_vocab_size,
                 last_target = dec_inputs[decoder_size].name
                 input_feed[last_target] = np.zeros([batch_size], dtype=np.int32)
 
-                loss, _ = sess.run([tower_loss[k], updates[k]], input_feed)
-                f.write('Perplexity\t: %f\n' % (np.exp(loss)))
+                loss_1, loss_2, _ = sess.run([tower_losses[0][k] tower_losses[1][k], updates[k]], input_feed)
+                f.write('Perplexity\t: %f\n' % (np.exp((loss_1+loss_2)/2)))
 
             f.write(linebreak())
             f.write('Average training time: %.3f s/iter\n' % ((time() - t) / _NUM_ITER))
