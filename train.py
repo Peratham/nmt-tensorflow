@@ -19,8 +19,8 @@ _FLAGS = tf.app.flags.FLAGS
 _DATA = ([([1, 1], [2, 2]), ([3, 3], [4]), ([5], [6])],
          [([1, 1, 1, 1, 1], [2, 2, 2, 2, 2]), ([3, 3, 3], [5, 6])])
 _NUM_ITER = 20
-_GPU = map(lambda x: x.name, filter(lambda d: d.device_type == 'GPU', 
-                                    device_lib.list_local_devices()))
+_GPU = ['/gpu:%d' %(i) for i in xrange(len(filter(lambda d: d.device_type == 'GPU', 
+                                                  device_lib.list_local_devices())))]
 
 def linebreak():
     return '-' * 50 + '\n'
