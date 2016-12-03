@@ -184,7 +184,9 @@ def train(source_vocab_size,
                 last_target = dec_inputs[decoder_size].name
                 input_feed[last_target] = np.zeros([batch_size], dtype=np.int32)
 
-                loss_1, loss_2, _ = sess.run([tower_losses[0][k] tower_losses[1][k], updates[k]], input_feed)
+                loss_1, loss_2, _ = sess.run([tower_losses[0][k], 
+                                              tower_losses[1][k], 
+                                              updates[k]], input_feed)
                 f.write('Perplexity\t: %f\n' % (np.exp((loss_1+loss_2)/2)))
 
             f.write(linebreak())
