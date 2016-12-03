@@ -30,7 +30,7 @@ def linebreak():
     return '-' * 50 + '\n'
 
 def single_computation():
-    with open(os.path.join(_FLAGS, 'single_computation.out'), 'w') as f:
+    with open(os.path.join(_FLAGS.output_dir, 'single_computation.out'), 'w') as f:
         graph = tf.Graph()
         t = time()
         with graph.as_default(), tf.device(_GPU[0]):
@@ -70,7 +70,7 @@ def single_computation():
             f.write('Average training time: %.3f s/iter' %((time() - t)/_NUM_ITER))
 
 def twin_computation():
-    with open(os.path.join(_FLAGS, 'twin_computation.out'), 'w') as f:
+    with open(os.path.join(_FLAGS.output_dir, 'twin_computation.out'), 'w') as f:
         graph = tf.Graph()
         t = time()
         with graph.as_default():

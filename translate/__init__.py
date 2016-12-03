@@ -23,8 +23,10 @@ from __future__ import division
 from __future__ import print_function
 
 from translate import data_utils
-from translate import eval_utils
 from translate import model_utils
 from translate import model
 from translate import seq2seq_model
 from translate import attn_lib
+
+# If not running on cluster. Uncomment the following.
+# from translate import eval_utils
