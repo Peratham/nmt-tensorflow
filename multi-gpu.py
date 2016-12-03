@@ -294,7 +294,7 @@ def get_batch(data, buckets, bucket_id, batch_size):
 def main(_):
     train(source_vocab_size=10, 
           target_vocab_size=10,
-          buckets=BUCKETS, 
+          buckets=_BUCKETS, 
           size=32,
           num_layers=2, 
           batch_size=32,
