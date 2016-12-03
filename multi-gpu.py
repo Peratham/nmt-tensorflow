@@ -97,7 +97,7 @@ def train(source_vocab_size,
         
         learning_rate = _get_learning_rate(optim) if learning_rate is None else learning_rate
         lr = tf.Variable(float(learning_rate), trainable=False, dtype=dtype)
-        learning_rate_decay_op = learning_rate.assign(lr * learning_rate_decay_factor)
+        learning_rate_decay_op = lr.assign(lr * learning_rate_decay_factor)
         
         opt = _get_optimizer(lr, optimizer=optim)
         
