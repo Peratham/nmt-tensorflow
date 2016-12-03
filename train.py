@@ -113,28 +113,27 @@ def twin_computation():
                 bucket_id = random.choice([0, 1])
                 encoder_inputs, decoder_inputs, target_weights = model_one.get_batch(_DATA, bucket_id)
                 
-                (l1, o1), if_one = model_one.step(sess, 
+                of_one, if_one = model_one.step(sess, 
                                                 encoder_inputs, 
                                                 decoder_inputs, 
                                                 target_weights, 
                                                 bucket_id, 
                                                 forward_only=False, 
                                                 delayed=True)
-                (l2, o2), if_two = model_two.step(sess, 
+                of_two, if_two = model_two.step(sess, 
                                                 encoder_inputs, 
                                                 decoder_inputs, 
                                                 target_weights, 
                                                 bucket_id, 
                                                 forward_only=False, 
                                                 delayed=True)
-                #output_feed = of_one + of_two
+                output_feed = of_one + of_two
                 
                 input_feed = {}
                 input_feed.update(if_one)
                 input_feed.update(if_two)
                 
-                loss_one, loss_two = sess.run([l1, l2], input_feed)
-                sess.run([o1, o2], input_feed)
+                loss_one, _, loss_two, _ = sess.run(output_feed, input_feed)
                 f.write('Perplexity: %f | %f\n' %(np.exp(loss_one), np.exp(loss_two)))
             
             f.write(linebreak())
