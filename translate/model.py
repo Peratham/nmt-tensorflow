@@ -57,6 +57,7 @@ class Model(object):
                  use_local=False,
                  num_samples=None,
                  forward_only=False,
+                 scope=None,
                  dtype=tf.float32):
 
         """
@@ -161,7 +162,9 @@ class Model(object):
                                                               global_step=self.global_step))
 
         # Saving Model Parameters Operation.
-        self.saver = tf.train.Saver(tf.all_variables())
+        trainable_vars = tf.all_variables() if scope is None else tf.get_collection(
+            tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope)
+        self.saver = tf.train.Saver(trainable_vars)
 
     def _get_loss(self, num_samples, target_vocab_size, proj_w_t, proj_w, proj_b):
         """
@@ -223,7 +226,8 @@ class Model(object):
              decoder_inputs,
              target_weights,
              bucket_id,
-             forward_only=False):
+             forward_only=False, 
+             delayed=False):
         """
         Run a step of the model given the inputs for a specific bucket.
         """
@@ -256,7 +260,7 @@ class Model(object):
 
         output_feed = self.outputs[k] if forward_only else [self.losses[k], self.updates[k]]
 
-        return session.run(output_feed, input_feed)
+        return session.run(output_feed, input_feed) if not delayed else (output_feed, input_feed)
 
     def get_batch(self, data, bucket_id):
         """
