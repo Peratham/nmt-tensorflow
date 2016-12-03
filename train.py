@@ -19,8 +19,10 @@ _FLAGS = tf.app.flags.FLAGS
 _DATA = ([([1, 1], [2, 2]), ([3, 3], [4]), ([5], [6])],
          [([1, 1, 1, 1, 1], [2, 2, 2, 2, 2]), ([3, 3, 3], [5, 6])])
 _NUM_ITER = 20
-_GPU = ['/gpu:%d' %(i) for i in xrange(len(filter(lambda d: d.device_type == 'GPU', 
-                                                  device_lib.list_local_devices())))]
+_GPU = map(lambda x: x.name, filter(lambda d: d.device_type == 'GPU', 
+                                    device_lib.list_local_devices()))
+_CONFIG = tf.ConfigProto(allow_soft_placement=True,
+                         log_device_placement=True)
 
 def linebreak():
     return '-' * 50 + '\n'
@@ -45,7 +47,7 @@ def single_computation():
         f.write('Initializing Graph took %.3f s\n' %(time() - t))
         f.write(linebreak())
         
-        with tf.Session(graph=graph) as sess:
+        with tf.Session(graph=graph, config=_CONFIG) as sess:
             t = time()
             sess.run(tf.initialize_all_variables())
             f.write('Initializing Variables took %.3f s\n' %(time() - t))
@@ -101,7 +103,7 @@ def twin_computation():
         f.write('Initializing Graphs took %.3f s\n' %(time() - t))
         f.write(linebreak())
         
-        with tf.Session(graph=graph) as sess:
+        with tf.Session(graph=graph, config=_CONFIG) as sess:
             t = time()
             sess.run(tf.initialize_all_variables())
             f.write('Initializing Variables took %.3f s\n' %(time() - t))
