@@ -65,7 +65,7 @@ def single_computation():
                 f.write('Perplexity\t: %f\n' %(np.exp(loss)))
             
             f.write(linebreak())
-            f.write('Average training time: %.3f s/iter' %((time() - t)/_NUM_ITER))
+            f.write('Average training time: %.3f s/iter\n' %((time() - t)/_NUM_ITER))
 
 def twin_computation():
     with open(os.path.join(_FLAGS.output_dir, 'twin_computation.out'), 'w') as f:
@@ -120,7 +120,7 @@ def twin_computation():
                                                 bucket_id, 
                                                 forward_only=False, 
                                                 delayed=True)
-                of_two, if_two = model_one.step(sess, 
+                of_two, if_two = model_two.step(sess, 
                                                 encoder_inputs, 
                                                 decoder_inputs, 
                                                 target_weights, 
@@ -137,7 +137,7 @@ def twin_computation():
                 f.write('Perplexity: %f | %f\n' %(np.exp(loss_one), np.exp(loss_two)))
             
             f.write(linebreak())
-            f.write('Average training time: %.3f s/iter' %((time() - t)/_NUM_ITER))
+            f.write('Average training time: %.3f s/iter\n' %((time() - t)/_NUM_ITER))
 
 def main(_):
     single_computation()
