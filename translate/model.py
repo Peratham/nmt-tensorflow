@@ -164,7 +164,7 @@ class Model(object):
 
         # Saving Model Parameters Operation.
         trainable_vars = tf.all_variables() if scope is None else tf.get_collection(
-            tf.GraphKeys.GLOBAL_VARIABLES, scope=scope)
+            tf.GraphKeys.VARIABLES, scope=scope)
         self.saver = tf.train.Saver(trainable_vars)
 
     def _get_loss(self, num_samples, target_vocab_size, proj_w_t, proj_w, proj_b):
