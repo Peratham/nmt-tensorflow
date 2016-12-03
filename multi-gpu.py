@@ -42,7 +42,7 @@ def average_gradients(tower_grads, buckets):
     for i, _ in enumerate(buckets):
         average_grads = []
         for grad_and_vars in zip(tower_grads[0][i], tower_grads[1][i]):
-            grad = tf.reduce_mean(tf.concat(0, [tf.expand_dims(g, 0) for g, _ in grad_and_vars]))
+            grad = tf.reduce_mean(tf.concat(0, [tf.expand_dims(g, 0) for g, _ in grad_and_vars]), 0)
             average_grads.append((grad, grad_and_vars[0][1]))
         bucket_grads.append(average_grads)
     return bucket_grads
@@ -113,6 +113,9 @@ def train(source_vocab_size,
                 with vs.variable_scope('inputs_%d' % i, reuse=False) as input_scope:
                     enc_inputs, dec_inputs, target_weights, targets = scoped_inputs(buckets)
                     tower_inputs.append((enc_inputs, dec_inputs, target_weights))
+                
+                if i > 0:
+                    tf.get_variable_scope().reuse_variables()
 
                 tower_loss = inference(enc_inputs,
                                        dec_inputs,
@@ -128,7 +131,6 @@ def train(source_vocab_size,
                                        use_lstm_peepholes=use_lstm_peepholes,
                                        use_local=use_local)
 
-                tf.get_variable_scope().reuse_variables()
                 tower_grads.append([opt.compute_gradients(loss) for loss in tower_loss])
 
         f.write('Initializing Graph took %.3fs\n' % (time() - t))
