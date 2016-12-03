@@ -171,6 +171,7 @@ def train(source_vocab_size,
                 
             f.write(linebreak())
             f.write('Average training time: %.3f s/iter\n' %((time() - t)/_NUM_ITER))
+        f.close()
         
 def _get_loss(num_samples, target_vocab_size, proj_w_t, proj_w, proj_b):
     """
