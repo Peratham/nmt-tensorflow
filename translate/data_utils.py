@@ -28,9 +28,13 @@ import os
 import re
 from collections import defaultdict
 
-import dask.bag as db
-from dask.diagnostics import ProgressBar
-
+_FORCE_STREAMING = False
+try:
+    import dask.bag as db
+    from dask.diagnostics import ProgressBar
+except ImportError:
+    _FORCE_STREAMING = True
+    
 # Global Constants.
 _EN          = 'en'
 _FR          = 'fr'
@@ -152,6 +156,9 @@ def prepare_wmt_data(data_dir_dict, en_vocabulary_size, fr_vocabulary_size, stre
             (3) path to the English vocabulary file,
             (4) path to the French vocabulary file.
     """
+    # Check Streaming Capability.
+    streaming = True if not streaming and _FORCE_STREAMING else streaming
+    
     # Validate Input Arguments.
     keys = ['data_dir', 'en_data', 'fr_data']
     key_error_msg = 'Expected ({}) in data_dir_dict.'.format(', '.join(keys))
