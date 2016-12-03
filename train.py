@@ -16,15 +16,11 @@ tf.app.flags.DEFINE_string('output_dir', '/tmp', 'Output directory.')
 tf.app.flags.DEFINE_string('train_dir', '/tmp', 'Training directory.')
 
 _FLAGS = tf.app.flags.FLAGS
-_GPU = _get_gpus()
 _DATA = ([([1, 1], [2, 2]), ([3, 3], [4]), ([5], [6])],
          [([1, 1, 1, 1, 1], [2, 2, 2, 2, 2]), ([3, 3, 3], [5, 6])])
 _NUM_ITER = 20
-
-
-def _get_gpus():
-    return map(lambda x: x.name, filter(lambda d: d.device_type == 'GPU', 
-                                        device_lib.list_local_devices()))
+_GPU = map(lambda x: x.name, filter(lambda d: d.device_type == 'GPU', 
+                                    device_lib.list_local_devices()))
 
 def linebreak():
     return '-' * 50 + '\n'
