@@ -106,8 +106,8 @@ def linebreak():
 
 
 def train():
-    dataset = get_data(os.path.join(_FLAGS.data_dir, _EN_DATA),
-                       os.path.join(_FLAGS.data_dir, _FR_DATA))
+    dataset = get_data(en_ids_path=os.path.join(_FLAGS.data_dir, _EN_DATA),
+                       fr_ids_path=os.path.join(_FLAGS.data_dir, _FR_DATA))
     intervals = get_weights(dataset)
 
     step_time = 0.0
