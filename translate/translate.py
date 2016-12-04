@@ -212,6 +212,8 @@ def train():
 
                     previous_losses[0].append(batch_loss[0])
                     previous_losses[1].append(batch_loss[1])
+                    
+                    print('    step-time: %.3f' %(step_time))
 
                     step_time = 0.0
                     batch_loss = [0.0, 0.0]
