@@ -77,7 +77,7 @@ def read_into_buckets(en_ids_path, fr_ids_path, print_every=100000):
                     sys.stdout.flush()
                 en_sequence, fr_sequence = get_int_seq(en_line), get_int_seq(fr_line)
                 en_seq_len, fr_seq_len = len(en_sequence), len(fr_sequence)
-                if en_seq_len < _MAX_EN and fr_seq_len < _MAX_FR:
+                if 0 < en_seq_len < _MAX_EN and 0 < fr_seq_len < _MAX_FR:
                     b_id = max(br(en_buckets, en_seq_len), br(fr_buckets, fr_seq_len))
                     data_set[b_id].append([en_sequence, fr_sequence])
                 en_line, fr_line = en.readline(), fr.readline()
