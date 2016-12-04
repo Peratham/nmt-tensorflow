@@ -109,16 +109,8 @@ def linebreak():
 
 
 def train():
-    dataset = get_data(en_ids_path=os.path.join(_FLAGS.data_dir, _EN_DATA),
-                       fr_ids_path=os.path.join(_FLAGS.data_dir, _FR_DATA))
-    intervals = get_weights(dataset)
-
-    step_time = 0.0
-    batch_loss = [0.0, 0.0]
-    current_step = 0
-    previous_losses = [[], []]
-
     with open(os.path.join(_FLAGS.output_dir, 'train.out'), 'w') as f:
+        # Graph Creation.
         graph = tf.Graph()
         t = time()
         with graph.as_default():
@@ -148,7 +140,7 @@ def train():
                                   optim='sgd',
                                   scope=gscope_2.name,
                                   num_samples=None)
-        print('Initializing Graphs took %.3f s\n' % (time() - t))
+        print('Initializing Graphs took %.3f s' % (time() - t))
         print(linebreak())
         sys.stdout.flush()
 
@@ -160,9 +152,8 @@ def train():
             m2_path = os.path.join(_FLAGS.train_dir, 'model_two')
             m1_checkpoint = tf.train.get_checkpoint_state(m1_path)
             m2_checkpoint = tf.train.get_checkpoint_state(m2_path)
-            preconditions = [bool(m1_checkpoint), bool(m2_checkpoint)]
-            conditions = []
-            if all(preconditions):
+            conditions = [bool(m1_checkpoint), bool(m2_checkpoint)]
+            if all(conditions):
                 conditions.append(tf.gfile.Exists(m1_checkpoint.model_checkpoint_path))
                 conditions.append(tf.gfile.Exists(m2_checkpoint.model_checkpoint_path))
             if all(conditions):
@@ -170,11 +161,22 @@ def train():
                 model_two.saver.restore(sess, m2_checkpoint.model_checkpoint_path)
             else:
                 sess.run(tf.initialize_all_variables())
-            print('Initializing Variables took %.3f s\n' % (time() - t))
+            print('Initializing Variables took %.3f s' % (time() - t))
             print(linebreak())
             sys.stdout.flush()
+            
+            # Gather Data.
+            dataset = get_data(en_ids_path=os.path.join(_FLAGS.data_dir, _EN_DATA),
+                       fr_ids_path=os.path.join(_FLAGS.data_dir, _FR_DATA))
+            intervals = get_weights(dataset)
 
-            # Graph Creation.
+            # Book-keeping.
+            step_time = 0.0
+            batch_loss = [0.0, 0.0]
+            current_step = 0
+            previous_losses = [[], []]
+
+            # Training.
             while True:
                 bucket_id = np.abs(np.random.rand() - intervals).argmin()
                 start_time = time()
@@ -229,10 +231,79 @@ def train():
                     model_one.save(sess, m1_path)
                     model_two.save(sess, m2_path)
                     sys.stdout.flush()
-                    
-                    
 
+def train_one():
+    dataset = get_data(en_ids_path=os.path.join(_FLAGS.data_dir, _EN_DATA),
+                       fr_ids_path=os.path.join(_FLAGS.data_dir, _FR_DATA))
+    intervals = get_weights(dataset)
 
+    step_time = 0.0
+    batch_loss = 0.0
+    current_step = 0
+    previous_losses = []
+
+    with open(os.path.join(_FLAGS.output_dir, 'train_one.out'), 'w') as f:
+        graph = tf.Graph()
+        t = time()
+        with graph.as_default():
+            model = Model(source_vocab_size=_EN_VOCAB,
+                          target_vocab_size=_FR_VOCAB,
+                          buckets=_BUCKETS,
+                          size=512,
+                          num_layers=3,
+                          learning_rate=None,
+                          batch_size=256,
+                          use_lstm=True,
+                          use_local=True,
+                          optim='adam',
+                          scope=gscope_1.name,
+                          num_samples=None)
+        print('Initializing Graphs took %.3f s\n' % (time() - t))
+        print(linebreak())
+        sys.stdout.flush()
+
+        with tf.Session(graph=graph, config=_CONFIG) as sess:
+
+            # Initializations.
+            t = time()
+            save_path = os.path.join(_FLAGS.train_dir, 'model')
+            model.load(sess, save_path)
+            print('Initializing Variables took %.3f s\n' % (time() - t))
+            print(linebreak())
+            sys.stdout.flush()
+
+            # Graph Creation.
+            while True:
+                bucket_id = np.abs(np.random.rand() - intervals).argmin()
+                start_time = time()
+                encoder_inputs, decoder_inputs, target_weights = model.get_batch(dataset, bucket_id)
+                loss, _ = model.step(sess,
+                                     encoder_inputs,
+                                     decoder_inputs,
+                                     target_weights,
+                                     bucket_id,
+                                     forward_only=False)
+                step_time += (time() - start_time) / _FLAGS.steps_per_checkpoint
+                batch_loss += loss / _FLAGS.steps_per_checkpoint
+                current_step += 1
+
+                if current_step % _FLAGS.steps_per_checkpoint == 0:
+                    perplexity = np.exp(loss)
+                    f.write('%f\t%f\n' % perplexity)
+
+                    if current_step > 2 * _FLAGS.steps_per_checkpoint:
+                        if batch_loss > max(previous_losses[-3:]):
+                            sess.run(model.learning_rate_decay_op)
+
+                    previous_losses.append(batch_loss)
+                    
+                    print('current-step: %d step-time: %.3f' %(current_step, step_time))
+
+                    step_time = 0.0
+                    batch_loss = 0.0
+
+                    model.save(sess, save_path)
+                    sys.stdout.flush()
 
 def self_test_model():
     """
