@@ -160,12 +160,13 @@ def train():
             m2_path = os.path.join(_FLAGS.train_dir, 'model_two')
             m1_checkpoint = tf.train.get_checkpoint_state(m1_path)
             m2_checkpoint = tf.train.get_checkpoint_state(m2_path)
-            if m1_checkpoint and m2_checkpoint:
-                mcp_1 = m1_checkpoint.model_checkpoint_path
-                mcp_2 = m2_checkpoint.model_checkpoint_path
-                if tf.gfile.Exists(mcp_1) and tf.gfile.Exists(mcp_2):
-                    model_one.saver.restore(sess, mcp_1)
-                    model_two.saver.restore(sess, mcp_2)
+            conditions = [bool(m1_checkpoint),
+                          bool(m2_checkpoint),
+                          tf.gfile.Exists(m1_checkpoint.model_checkpoint_path),
+                          tf.gfile.Exists(m2_checkpoint.model_checkpoint_path)]
+            if all(conditions):
+                model_one.saver.restore(sess, m1_checkpoint.model_checkpoint_path)
+                model_two.saver.restore(sess, m2_checkpoint.model_checkpoint_path)
             else:
                 sess.run(tf.initialize_all_variables())
             print('Initializing Variables took %.3f s\n' % (time() - t))
