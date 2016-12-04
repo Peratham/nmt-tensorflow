@@ -36,6 +36,7 @@ from translate.model import Model
 tf.app.flags.DEFINE_string('data_dir', '/tmp', 'Data directory.')
 tf.app.flags.DEFINE_string('output_dir', '/tmp', 'Output directory.')
 tf.app.flags.DEFINE_string('train_dir', '/tmp', 'Training directory.')
+tf.app.flags.DEFINE_boolean('dual_train', True, 'Set true to train two models at unison.')
 tf.app.flags.DEFINE_integer('steps_per_checkpoint', 200, 'Steps per checkpoint.')
 
 # Global Constants.
@@ -149,6 +150,7 @@ def train():
                                   num_samples=None)
         print('Initializing Graphs took %.3f s\n' % (time() - t))
         print(linebreak())
+        sys.stdout.flush()
 
         with tf.Session(graph=graph, config=_CONFIG) as sess:
 
@@ -167,6 +169,8 @@ def train():
             else:
                 sess.run(tf.initialize_all_variables())
             print('Initializing Variables took %.3f s\n' % (time() - t))
+            print(linebreak())
+            sys.stdout.flush()
 
             # Graph Creation.
             while True:
@@ -215,7 +219,7 @@ def train():
                     previous_losses[0].append(batch_loss[0])
                     previous_losses[1].append(batch_loss[1])
                     
-                    print('    step-time: %.3f' %(step_time))
+                    print('current-step: %d step-time: %.3f' %(current_step, step_time))
 
                     step_time = 0.0
                     batch_loss = [0.0, 0.0]
@@ -223,6 +227,9 @@ def train():
                     model_one.save(sess, m1_path)
                     model_two.save(sess, m2_path)
                     sys.stdout.flush()
+                    
+                    
+
 
 
 def self_test_model():
