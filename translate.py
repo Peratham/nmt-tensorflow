@@ -292,7 +292,7 @@ def train():
 
                 if current_step % _FLAGS.steps_per_checkpoint == 0:
                     perplexity = np.exp(loss)
-                    f.write('%f\t%f\n' % perplexity)
+                    f.write('%f\n' % perplexity)
 
                     if current_step > 2 * _FLAGS.steps_per_checkpoint:
                         if batch_loss > max(previous_losses[-3:]):
