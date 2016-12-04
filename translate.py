@@ -72,6 +72,7 @@ def read_into_buckets(en_ids_path, fr_ids_path, print_every=100000):
                 counter += 1
                 if counter % print_every == 0:
                     print("  reading data line %d" % counter)
+                    sys.stdout.flush()
                 en_sequence, fr_sequence = get_int_seq(en_line), get_int_seq(fr_line)
                 en_seq_len, fr_seq_len = len(en_sequence), len(fr_sequence)
                 if en_seq_len < _MAX_EN and fr_seq_len < _MAX_FR:
@@ -220,6 +221,7 @@ def train():
 
                     model_one.save(sess, m1_path)
                     model_two.save(sess, m2_path)
+                    sys.stdout.flush()
 
 
 def self_test_model():
