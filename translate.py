@@ -34,14 +34,12 @@ from tensorflow.python.ops import variable_scope as vs
 from translate.model import Model
 
 tf.app.flags.DEFINE_string('data_dir', '/tmp', 'Data directory.')
-tf.app.flags.DEFINE_string('output_dir', '/tmp', 'Output directory.')
 tf.app.flags.DEFINE_string('train_dir', '/tmp', 'Training directory.')
-tf.app.flags.DEFINE_boolean('dual_train', True, 'Set true to train two models at unison.')
 tf.app.flags.DEFINE_integer('steps_per_checkpoint', 200, 'Steps per checkpoint.')
 
 # Global Constants.
-_EN_DATA = 'giga-fren.release2.fixed.ids50000.en'
-_FR_DATA = 'giga-fren.release2.fixed.ids50000.fr'
+_EN_DATA = 'giga-fren.r2.tok.ids50000.en'
+_FR_DATA = 'giga-fren.r2.tok.ids50000.fr'
 _EN_VOCAB = 50000
 _FR_VOCAB = 50000
 _FLAGS = tf.app.flags.FLAGS
@@ -106,131 +104,6 @@ def get_weights(data):
 
 def linebreak():
     return '-' * 50 + '\n'
-
-
-def train_multi():
-    with open(os.path.join(_FLAGS.output_dir, 'train_multi.out'), 'w') as f:
-        # Graph Creation.
-        graph = tf.Graph()
-        t = time()
-        with graph.as_default():
-            with tf.device(_GPU[0]), vs.variable_scope('graph_one') as gscope_1:
-                model_one = Model(source_vocab_size=_EN_VOCAB,
-                                  target_vocab_size=_FR_VOCAB,
-                                  buckets=_BUCKETS,
-                                  size=512,
-                                  num_layers=3,
-                                  learning_rate=None,
-                                  batch_size=256,
-                                  use_lstm=True,
-                                  use_local=True,
-                                  optim='adam',
-                                  scope=gscope_1.name,
-                                  num_samples=None)
-            with tf.device(_GPU[1]), vs.variable_scope('graph_two') as gscope_2:
-                model_two = Model(source_vocab_size=_EN_VOCAB,
-                                  target_vocab_size=_FR_VOCAB,
-                                  buckets=_BUCKETS,
-                                  size=512,
-                                  num_layers=3,
-                                  learning_rate=None,
-                                  batch_size=256,
-                                  use_lstm=True,
-                                  use_local=True,
-                                  optim='sgd',
-                                  scope=gscope_2.name,
-                                  num_samples=None)
-        print('Initializing Graphs took %.3f s' % (time() - t))
-        print(linebreak())
-        sys.stdout.flush()
-
-        with tf.Session(graph=graph, config=_CONFIG) as sess:
-
-            # Initializations.
-            t = time()
-            m1_path = os.path.join(_FLAGS.train_dir, 'model_one')
-            m2_path = os.path.join(_FLAGS.train_dir, 'model_two')
-            m1_checkpoint = tf.train.get_checkpoint_state(m1_path)
-            m2_checkpoint = tf.train.get_checkpoint_state(m2_path)
-            conditions = [bool(m1_checkpoint), bool(m2_checkpoint)]
-            if all(conditions):
-                conditions.append(tf.gfile.Exists(m1_checkpoint.model_checkpoint_path))
-                conditions.append(tf.gfile.Exists(m2_checkpoint.model_checkpoint_path))
-            if all(conditions):
-                model_one.saver.restore(sess, m1_checkpoint.model_checkpoint_path)
-                model_two.saver.restore(sess, m2_checkpoint.model_checkpoint_path)
-            else:
-                sess.run(tf.initialize_all_variables())
-            print('Initializing Variables took %.3f s' % (time() - t))
-            print(linebreak())
-            sys.stdout.flush()
-            
-            # Gather Data.
-            dataset = get_data(en_ids_path=os.path.join(_FLAGS.data_dir, _EN_DATA),
-                       fr_ids_path=os.path.join(_FLAGS.data_dir, _FR_DATA))
-            intervals = get_weights(dataset)
-
-            # Book-keeping.
-            step_time = 0.0
-            batch_loss = [0.0, 0.0]
-            current_step = 0
-            previous_losses = [[], []]
-
-            # Training.
-            while True:
-                bucket_id = np.abs(np.random.rand() - intervals).argmin()
-                start_time = time()
-                encoder_inputs, decoder_inputs, target_weights = model_one.get_batch(dataset, bucket_id)
-
-                of_one, if_one = model_one.step(sess,
-                                                encoder_inputs,
-                                                decoder_inputs,
-                                                target_weights,
-                                                bucket_id,
-                                                forward_only=False,
-                                                delayed=True)
-                of_two, if_two = model_two.step(sess,
-                                                encoder_inputs,
-                                                decoder_inputs,
-                                                target_weights,
-                                                bucket_id,
-                                                forward_only=False,
-                                                delayed=True)
-                output_feed = of_one + of_two
-
-                input_feed = {}
-                input_feed.update(if_one)
-                input_feed.update(if_two)
-
-                loss_one, _, loss_two, _ = sess.run(output_feed, input_feed)
-
-                step_time += (time() - start_time) / _FLAGS.steps_per_checkpoint
-                batch_loss[0] += loss_one / _FLAGS.steps_per_checkpoint
-                batch_loss[1] += loss_two / _FLAGS.steps_per_checkpoint
-                current_step += 1
-
-                if current_step % _FLAGS.steps_per_checkpoint == 0:
-                    perplexity_one = np.exp(loss_one)
-                    perplexity_two = np.exp(loss_two)
-                    f.write('%f\t%f\n' % (perplexity_one, perplexity_two))
-
-                    if current_step > 2 * _FLAGS.steps_per_checkpoint:
-                        if batch_loss[0] > max(previous_losses[0][-3:]):
-                            sess.run(model_one.learning_rate_decay_op)
-                        if batch_loss[1] > max(previous_losses[1][-3:]):
-                            sess.run(model_two.learning_rate_decay_op)
-
-                    previous_losses[0].append(batch_loss[0])
-                    previous_losses[1].append(batch_loss[1])
-                    
-                    print('current-step: %d step-time: %.3f' %(current_step, step_time))
-
-                    step_time = 0.0
-                    batch_loss = [0.0, 0.0]
-
-                    model_one.save(sess, m1_path)
-                    model_two.save(sess, m2_path)
-                    sys.stdout.flush()
 
 def train():
     # Graph Creation.
