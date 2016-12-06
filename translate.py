@@ -25,6 +25,8 @@ import sys
 import random
 from bisect import bisect_right as br
 from time import time
+from time import localtime
+from time import strftime
 
 import numpy as np
 import tensorflow as tf
@@ -168,13 +170,15 @@ def train():
                     sess.run(model.learning_rate_decay_op)
 
                 prev_losses.append(batch_loss)
-                    
-                print('> current-step: %d step-time: %.3f perplexity: %f' %(current_step, step_time, perplexity))
+                
+                wall_time = strftime('%m/%d %H:%M %p', localtime())
+                print('> wall time: %s current-step: %d step-time: %.3f perplexity: %f' %(wall_time, current_step, step_time, perplexity))
 
                 step_time = 0.0
                 batch_loss = 0.0
 
-                model.save(sess, save_path)
+                if current_step % (5 * _FLAGS.steps_per_checkpoint) == 0:
+                    model.save(sess, save_path)
                 sys.stdout.flush()
 
 def self_test_model():
